@@ -80,20 +80,6 @@ Example 2: "organic whole grain cereal"
 - Return only JSON, no explanation.
 """
 
-SEARCH_STAGE_SCHEMA = {
-    "type": "object",
-    "required": ["index"],
-    "properties": {
-        "index": {"type": "string"},
-        "text": {"type": "object"},
-        "compound": {"type": "object"},
-        "equals": {"type": "object"},
-        "range": {"type": "object"},
-        "phrase": {"type": "object"},
-        "wildcard": {"type": "object"},
-    },
-    "additionalProperties": True,
-}
 
 ALLOWED_FIELDS = {
     "product_name",
@@ -165,14 +151,11 @@ def sanitize_search_stage(stage: dict, query: str = "") -> dict:
 def generate_search_stage(query: str, client=None) -> tuple:
     """Generate a MongoDB $search stage using Claude structured outputs."""
     if client is None:
-        if config.GROVE_API_KEY:
-            client = anthropic.Anthropic(
-                api_key="grove",
-                base_url=config.ANTHROPIC_BASE_URL,
-                default_headers={"Ocp-Apim-Subscription-Key": config.GROVE_API_KEY},
-            )
-        else:
-            client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
+        client = anthropic.Anthropic(
+            api_key="grove",
+            base_url=config.ANTHROPIC_BASE_URL,
+            default_headers={"api-key": config.GROVE_API_KEY},
+        )
     try:
         response = client.messages.create(
             model=config.CLAUDE_MODEL,
@@ -180,13 +163,19 @@ def generate_search_stage(query: str, client=None) -> tuple:
             temperature=0.0,
             system=SYSTEM_PROMPT,
             messages=[{"role": "user", "content": f'Query: "{query}"'}],
-            output_config={"format": {"type": "json_schema", "schema": SEARCH_STAGE_SCHEMA}},
         )
         if response.stop_reason == "refusal":
             return (fallback_search_stage(query), "refusal")
         try:
-            stage = json.loads(response.content[0].text)
-        except json.JSONDecodeError:
+            raw = response.content[0].text.strip()
+            # Strip markdown code fences if present
+            if raw.startswith("```"):
+                raw = raw.split("```", 2)[1]
+                if raw.startswith("json"):
+                    raw = raw[4:]
+                raw = raw.rsplit("```", 1)[0].strip()
+            stage = json.loads(raw)
+        except (json.JSONDecodeError, IndexError):
             return (fallback_search_stage(query), "json_error")
         sanitized = sanitize_search_stage(stage, query)
         return (sanitized, "ok")

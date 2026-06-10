@@ -79,13 +79,11 @@ WARN = "\033[33mWARN\033[0m"
 
 
 def make_anthropic_client():
-    if config.GROVE_API_KEY:
-        return anthropic.Anthropic(
-            api_key="grove",
-            base_url=config.ANTHROPIC_BASE_URL,
-            default_headers={"Ocp-Apim-Subscription-Key": config.GROVE_API_KEY},
-        )
-    return anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
+    return anthropic.Anthropic(
+        api_key="grove",
+        base_url=config.ANTHROPIC_BASE_URL,
+        default_headers={"api-key": config.GROVE_API_KEY},
+    )
 
 
 def run_tests():

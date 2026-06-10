@@ -21,13 +21,11 @@ def get_mongo_client():
 
 @st.cache_resource
 def get_anthropic_client():
-    if config.GROVE_API_KEY:
-        return anthropic.Anthropic(
-            api_key="grove",
-            base_url=config.ANTHROPIC_BASE_URL,
-            default_headers={"Ocp-Apim-Subscription-Key": config.GROVE_API_KEY},
-        )
-    return anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
+    return anthropic.Anthropic(
+        api_key="grove",
+        base_url=config.ANTHROPIC_BASE_URL,
+        default_headers={"api-key": config.GROVE_API_KEY},
+    )
 
 @st.cache_resource
 def get_voyage_client():
