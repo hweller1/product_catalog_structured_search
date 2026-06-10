@@ -84,18 +84,30 @@ def cached_search(query: str, text_weight: float, vector_weight: float, top_k: i
 
 
 # ---- Main render ----
+st.markdown("""
+<style>
+div[data-testid="stTextInput"] input {
+    font-size: 1.25rem;
+    padding: 0.75rem 1rem;
+    height: 3.25rem;
+}
+div[data-testid="stTextInput"] label {
+    font-size: 1rem;
+}
+</style>
+""", unsafe_allow_html=True)
+
 st.title("MongoDB Structured Search Demo")
 
 text_weight, vector_weight, top_k = render_sidebar()
 render_demo_buttons()
 
-col_search, col_btn = st.columns([5, 1])
-query = col_search.text_input(
+query = st.text_input(
     "Search products...",
     value=st.session_state.get("query", ""),
     key="search_input"
 )
-search_btn = col_btn.button("Search", use_container_width=True)
+search_btn = st.button("Search", use_container_width=True)
 
 if search_btn or (query and query != st.session_state.get("last_query", "")):
     st.session_state["last_query"] = query
