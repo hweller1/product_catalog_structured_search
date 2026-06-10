@@ -5,7 +5,14 @@ import config
 
 def get_drove_by(score_details: dict) -> str:
     details = score_details.get("details", [])
-    contributed = {d["inputPipelineName"] for d in details if int(d.get("rank", 0)) > 0}
+    def _rank(d):
+        v = d.get("rank", 0)
+        try:
+            return int(v)
+        except (ValueError, TypeError):
+            return 0
+
+    contributed = {d["inputPipelineName"] for d in details if _rank(d) > 0}
     if contributed == {"textPipeline", "vectorPipeline"}:
         return "Both"
     elif "textPipeline" in contributed:
