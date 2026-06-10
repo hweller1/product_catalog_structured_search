@@ -165,7 +165,14 @@ def sanitize_search_stage(stage: dict, query: str = "") -> dict:
 def generate_search_stage(query: str, client=None) -> tuple:
     """Generate a MongoDB $search stage using Claude structured outputs."""
     if client is None:
-        client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
+        if config.GROVE_API_KEY:
+            client = anthropic.Anthropic(
+                api_key="grove",
+                base_url=config.ANTHROPIC_BASE_URL,
+                default_headers={"Ocp-Apim-Subscription-Key": config.GROVE_API_KEY},
+            )
+        else:
+            client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
     try:
         response = client.messages.create(
             model=config.CLAUDE_MODEL,

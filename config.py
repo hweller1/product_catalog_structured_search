@@ -5,8 +5,16 @@ load_dotenv()
 
 # Required env vars — hard-fail at import time if missing
 MONGODB_URI = os.environ["MONGODB_URI"]
-ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
 VOYAGE_API_KEY = os.environ["VOYAGE_API_KEY"]
+
+# Anthropic — use Grove proxy (Azure APIM) if GROVE_API_KEY is set
+GROVE_API_KEY = os.environ.get("GROVE_API_KEY")
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+ANTHROPIC_BASE_URL = (
+    "https://grove-gateway-prod.azure-api.net/grove-foundry-prod/anthropic"
+    if GROVE_API_KEY
+    else None
+)
 
 # Optional env vars with defaults
 MONGODB_DB = os.environ.get("MONGODB_DB", "structured_search")
