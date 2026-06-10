@@ -1,0 +1,8 @@
+.env
+__pycache__/
+*.pyc
+.DS_Store
+openfoodfacts-products.jsonl.gz
+*.gz
+specs/
+.progress.md
