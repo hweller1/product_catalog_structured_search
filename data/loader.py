@@ -54,8 +54,6 @@ def extract_products(jsonl_path: str) -> list[dict]:
                 continue
             if not (doc.get("product_name") or "").strip():
                 continue
-            if not doc.get("image_url"):
-                continue
             if not doc.get("nutriscore_grade"):
                 continue
 
