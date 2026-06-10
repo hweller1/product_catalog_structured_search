@@ -11,7 +11,7 @@ import config
 from search.query_expansion import generate_search_stage
 from search.pipeline import build_rank_fusion_pipeline
 from ui.sidebar import render_sidebar, render_demo_buttons
-from ui.results import render_results_grid, render_under_the_hood
+from ui.results import render_results_grid, render_under_the_hood, render_query_routing
 
 st.set_page_config(page_title="MongoDB Structured Search", layout="wide")
 
@@ -112,6 +112,7 @@ if "last_results" in st.session_state:
     if reason == "refusal":
         st.warning("Claude couldn't parse that query — using basic text search")
 
+    render_query_routing(search_stage, st.session_state.get("last_query", ""), reason)
     render_results_grid(results)
     if results:
         render_under_the_hood(search_stage, results, pipeline)

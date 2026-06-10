@@ -1,4 +1,5 @@
-import duckdb
+import gzip
+import json as _json
 import sys
 import os
 from math import ceil
@@ -8,83 +9,60 @@ import voyageai
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
 
+_SCHEMA_FIELDS = [
+    "code", "product_name", "brands", "brands_tags", "categories_tags",
+    "labels_tags", "countries_tags", "ingredients_text", "nutriscore_grade",
+    "nova_group", "image_url", "image_small_url", "energy-kcal_100g",
+    "fat_100g", "proteins_100g", "sugars_100g", "sodium_100g",
+]
+
 
 def extract_products(jsonl_path: str) -> list[dict]:
-    """Extract products from a JSONL file using DuckDB with filter criteria."""
+    """Stream-filter products from JSONL(.gz) without loading the full file.
+
+    DuckDB schema auto-detection is unreliable on the large OFF file when
+    field types are inconsistent across rows. Streaming in Python is safer
+    and fast enough — we typically find 2000 qualifying products well before
+    scanning the full file.
+    """
     limit = config.SAMPLE_SIZE * 2
     completeness_min = config.COMPLETENESS_MIN
 
-    sql = f"""
-        SELECT
-            code,
-            product_name,
-            brands,
-            brands_tags,
-            categories_tags,
-            labels_tags,
-            countries_tags,
-            ingredients_text,
-            nutriscore_grade,
-            nova_group,
-            image_url,
-            image_small_url,
-            "energy-kcal_100g",
-            fat_100g,
-            proteins_100g,
-            sugars_100g,
-            sodium_100g
-        FROM read_ndjson('{jsonl_path}',
-            ignore_errors=true,
-            columns={{
-                code: 'VARCHAR',
-                product_name: 'VARCHAR',
-                brands: 'VARCHAR',
-                brands_tags: 'VARCHAR[]',
-                categories_tags: 'VARCHAR[]',
-                labels_tags: 'VARCHAR[]',
-                countries_tags: 'VARCHAR[]',
-                ingredients_text: 'VARCHAR',
-                nutriscore_grade: 'VARCHAR',
-                nova_group: 'DOUBLE',
-                image_url: 'VARCHAR',
-                image_small_url: 'VARCHAR',
-                "energy-kcal_100g": 'DOUBLE',
-                fat_100g: 'DOUBLE',
-                proteins_100g: 'DOUBLE',
-                sugars_100g: 'DOUBLE',
-                sodium_100g: 'DOUBLE',
-                completeness: 'DOUBLE'
-            }}
-        )
-        WHERE list_contains(countries_tags, 'en:united-states')
-          AND completeness >= {completeness_min}
-          AND product_name IS NOT NULL
-          AND product_name != ''
-          AND image_url IS NOT NULL
-          AND nutriscore_grade IS NOT NULL
-        LIMIT {limit}
-    """
+    docs: list[dict] = []
+    scanned = 0
+    open_fn = gzip.open if jsonl_path.endswith(".gz") else open
 
-    schema_fields = [
-        "code", "product_name", "brands", "brands_tags", "categories_tags",
-        "labels_tags", "countries_tags", "ingredients_text", "nutriscore_grade",
-        "nova_group", "image_url", "image_small_url", "energy-kcal_100g",
-        "fat_100g", "proteins_100g", "sugars_100g", "sodium_100g",
-    ]
+    with open_fn(jsonl_path, "rt", encoding="utf-8", errors="replace") as f:
+        for line in f:
+            if len(docs) >= limit:
+                break
+            line = line.strip()
+            if not line:
+                continue
+            scanned += 1
+            if scanned % 100_000 == 0:
+                print(f"  Scanned {scanned:,} rows, {len(docs)} matched so far...", end="\r")
+            try:
+                doc = _json.loads(line)
+            except Exception:
+                continue
 
-    con = duckdb.connect()
-    result = con.execute(sql)
-    col_names = [desc[0] for desc in result.description]
-    rows = result.fetchall()
-    con.close()
+            countries = doc.get("countries_tags")
+            if not isinstance(countries, list) or "en:united-states" not in countries:
+                continue
+            if (doc.get("completeness") or 0) < completeness_min:
+                continue
+            if not (doc.get("product_name") or "").strip():
+                continue
+            if not doc.get("image_url"):
+                continue
+            if not doc.get("nutriscore_grade"):
+                continue
 
-    products = []
-    for row in rows:
-        doc = dict(zip(col_names, row))
-        filtered = {field: doc.get(field) for field in schema_fields}
-        products.append(filtered)
+            docs.append({f: doc.get(f) for f in _SCHEMA_FIELDS})
 
-    return products
+    print(f"\n  Scanned {scanned:,} rows, extracted {len(docs)} products.")
+    return docs
 
 
 def product_to_prose(doc: dict) -> str:

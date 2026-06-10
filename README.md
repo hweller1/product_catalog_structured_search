@@ -45,6 +45,37 @@ This script:
 
 **Expected runtime: ~15 minutes.**
 
+## How it works
+
+Every query runs through two parallel pipelines fused by MongoDB's `$rankFusion`:
+
+```
+User query: "kosher low sodium soup"
+       │
+       ├─► Claude (claude-haiku-4-5)
+       │       Reads the schema, translates NL → structured $search stage:
+       │         • Label: Kosher          ← equals filter on labels_tags
+       │         • Sodium ≤ 120mg         ← range filter on sodium_100g
+       │         • Keyword: "soup"        ← text search on product_name
+       │       This is the TEXT PIPELINE — exact/structured matching.
+       │
+       └─► Voyage AI (voyage-4)
+               Embeds the full query as a 1024-dim vector.
+               Runs $vectorSearch for semantic similarity.
+               This is the VECTOR PIPELINE — intent matching.
+
+Both pipelines feed into $rankFusion (MongoDB 8.0+), which merges
+the ranked results using Reciprocal Rank Fusion (RRF) with configurable weights.
+```
+
+After each search the app shows a **Query Routing** panel that makes this visible:
+- **Left column**: what Claude extracted and mapped to specific schema fields
+- **Right column**: that Voyage AI ran semantic similarity for the full query
+- **"Drove by" badge** on each card: whether Text, Vector, or Both pipelines surfaced it
+
+The **Under the Hood** expander shows the raw `$search` JSON Claude generated,
+per-pipeline RRF ranks, and the full `$rankFusion` aggregation pipeline.
+
 ## Running the App
 
 ```bash

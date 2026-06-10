@@ -4,6 +4,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import streamlit as st
 import pandas as pd
 from search.pipeline import get_drove_by
+from search.explain import explain_search_stage
 
 def render_product_card(col, doc: dict) -> None:
     with col:
@@ -35,6 +36,29 @@ def render_product_card(col, doc: dict) -> None:
             sodium = doc.get("sodium_100g")
             if sodium is not None:
                 st.caption(f"Sodium: {round(sodium * 1000)}mg")
+
+
+def render_query_routing(search_stage: dict, query: str, reason: str) -> None:
+    """Two-column panel showing how Claude and Voyage AI each handled the query."""
+    constraints = explain_search_stage(search_stage)
+
+    with st.container(border=True):
+        col_text, col_vector = st.columns(2)
+
+        with col_text:
+            st.markdown("**🤖 Text pipeline** — Claude → `$search`")
+            if constraints:
+                for c in constraints:
+                    st.markdown(f"- {c}")
+            else:
+                st.caption("Keyword match on product name")
+            if reason in ("refusal", "error", "json_error"):
+                st.caption("⚠️ Fallback used — Claude could not parse this query")
+
+        with col_vector:
+            st.markdown("**🔍 Vector pipeline** — Voyage AI → `$vectorSearch`")
+            st.markdown(f'- Semantic similarity: *"{query}"*')
+            st.caption("voyage-4 · 1024-dim embedding · cosine similarity")
 
 
 def render_results_grid(results: list[dict]) -> None:
