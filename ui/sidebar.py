@@ -18,30 +18,10 @@ def render_demo_buttons() -> None:
     """Render pre-baked demo query buttons in the sidebar."""
     with st.sidebar:
         st.subheader("Demo Queries")
-        if st.button("Label filter: kosher + low sodium", use_container_width=True):
-            st.session_state["query"] = "kosher low sodium soup"
-            st.rerun()
-        if st.button("Semantic: organic cereal intent", use_container_width=True):
-            st.session_state["query"] = "organic whole grain cereal kids"
-            st.rerun()
-        if st.button("Hybrid: vegan protein bar", use_container_width=True):
-            st.session_state["query"] = "vegan protein bar chocolate"
-            st.rerun()
-        if st.button("Claims: gluten free + high protein", use_container_width=True):
-            st.session_state["query"] = "gluten free pasta high protein"
-            st.rerun()
-        if st.button("Semantic only: keto snack", use_container_width=True):
-            st.session_state["query"] = "keto friendly snack low carb"
-            st.rerun()
-        if st.button("Token exact: Nutri-Score A", use_container_width=True):
-            st.session_state["query"] = "Nutri-Score A dairy product"
-            st.rerun()
-        if st.button("Lexical: brand search", use_container_width=True):
-            st.session_state["query"] = "Clif bar flavors"
-            st.rerun()
-        if st.button("Multi-constraint: high fiber", use_container_width=True):
-            st.session_state["query"] = "high fiber breakfast food low sugar"
-            st.rerun()
+        for label, query in DEMO_QUERIES:
+            if st.button(label, use_container_width=True):
+                st.session_state["search_input"] = query
+                st.rerun()
 
 
 def render_sidebar() -> tuple[float, float, int]:

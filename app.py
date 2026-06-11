@@ -102,7 +102,6 @@ render_demo_buttons()
 
 query = st.text_input(
     "Search products...",
-    value=st.session_state.get("query", ""),
     key="search_input"
 )
 search_btn = st.button("Search", use_container_width=True)
