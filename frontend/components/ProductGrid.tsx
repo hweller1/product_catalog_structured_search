@@ -9,93 +9,79 @@ const NUTRISCORE_COLORS: Record<string, { bg: string; text: string }> = {
 };
 
 const DROVE_COLORS: Record<string, { bg: string; text: string }> = {
-  Both:   { bg: "#00ED6420", text: "#00ED64" },
-  Text:   { bg: "#3B82F620", text: "#3B82F6" },
-  Vector: { bg: "#8B5CF620", text: "#8B5CF6" },
-  Unknown:{ bg: "#89979B20", text: "#89979B" },
+  Both:    { bg: "#00ED6415", text: "#00a847" },
+  Text:    { bg: "#3B82F615", text: "#2563EB" },
+  Vector:  { bg: "#8B5CF615", text: "#7C3AED" },
+  Unknown: { bg: "#89979B20", text: "#89979B" },
 };
 
 function NutriScore({ grade }: { grade: string }) {
   const g = grade?.toLowerCase();
-  const color = NUTRISCORE_COLORS[g] || { bg: "#89979B30", text: "#89979B" };
+  const color = NUTRISCORE_COLORS[g] || { bg: "#89979B20", text: "#89979B" };
+  const valid = ["a","b","c","d","e"].includes(g);
   return (
-    <span
-      className="text-xs font-bold px-2 py-0.5 rounded"
-      style={{ background: color.bg, color: color.text }}
-    >
-      {g && ["a","b","c","d","e"].includes(g) ? `Nutri-Score ${grade.toUpperCase()}` : "No score"}
+    <span className="text-sm font-bold px-3 py-1 rounded-md" style={{ background: color.bg, color: color.text }}>
+      {valid ? `Nutri-Score ${grade.toUpperCase()}` : "No score"}
     </span>
   );
 }
 
 function DroveBadge({ drove }: { drove: string }) {
   const color = DROVE_COLORS[drove] || DROVE_COLORS.Unknown;
+  const label = drove === "Both" ? "⚡ Both" : drove === "Text" ? "🔤 Text" : drove === "Vector" ? "🔮 Vector" : drove;
   return (
-    <span
-      className="text-xs font-medium px-2 py-0.5 rounded-full"
-      style={{ background: color.bg, color: color.text }}
-    >
-      {drove === "Both" ? "⚡ Both pipelines" : drove === "Text" ? "🔤 Text pipeline" : drove === "Vector" ? "🔮 Vector pipeline" : drove}
+    <span className="text-sm font-semibold px-3 py-1 rounded-full" style={{ background: color.bg, color: color.text }}>
+      {label}
     </span>
   );
 }
 
 function ProductCard({ product }: { product: Product }) {
-  const cats = product.categories_tags?.slice(-2).map(t => t.replace("en:", "").replace(/-/g, " ")) || [];
+  const cats = product.categories_tags?.slice(-2).map(t => t.replace("en:", "").replace(/-/g, " ")) ?? [];
 
   return (
     <div
-      className="bg-white rounded-2xl overflow-hidden flex flex-col transition-all duration-200 hover:-translate-y-0.5"
-      style={{ boxShadow: "0 1px 3px rgba(0,30,43,0.08), 0 1px 2px rgba(0,30,43,0.06)", border: "1px solid rgba(0,30,43,0.06)" }}
+      className="bg-white rounded-2xl overflow-hidden flex flex-col transition-all duration-150 hover:-translate-y-1 hover:shadow-lg"
+      style={{ boxShadow: "0 1px 4px rgba(0,30,43,0.08)", border: "1px solid rgba(0,30,43,0.07)" }}
     >
-      {/* Image area */}
-      <div className="h-40 flex items-center justify-center" style={{ background: "#F0F4F5" }}>
+      {/* Image */}
+      <div className="h-48 flex items-center justify-center" style={{ background: "#F5F8F9" }}>
         {product.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={product.image_url} alt={product.product_name} className="h-36 w-auto object-contain" />
+          <img src={product.image_url} alt={product.product_name} className="h-40 w-auto object-contain p-2" />
         ) : (
-          <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl" style={{ background: "#E8EDEE" }}>
-            🛒
-          </div>
+          <div className="w-20 h-20 rounded-full flex items-center justify-center text-4xl" style={{ background: "#E8EDEE" }}>🛒</div>
         )}
       </div>
 
-      {/* Content */}
-      <div className="p-4 flex flex-col gap-2 flex-1">
+      {/* Body */}
+      <div className="p-5 flex flex-col gap-3 flex-1">
         <div>
-          <h3 className="font-semibold text-sm leading-tight line-clamp-2" style={{ color: "#001E2B" }}>
+          <h3 className="font-semibold text-base leading-snug line-clamp-2" style={{ color: "#001E2B" }}>
             {product.product_name}
           </h3>
           {product.brands && (
-            <p className="text-xs mt-0.5" style={{ color: "#89979B" }}>{product.brands}</p>
+            <p className="text-sm mt-1" style={{ color: "#89979B" }}>{product.brands}</p>
+          )}
+          {cats.length > 0 && (
+            <p className="text-sm mt-0.5 capitalize" style={{ color: "#89979B" }}>{cats.join(" · ")}</p>
           )}
         </div>
 
-        {cats.length > 0 && (
-          <p className="text-xs capitalize" style={{ color: "#89979B" }}>
-            {cats.join(" · ")}
-          </p>
-        )}
+        <NutriScore grade={product.nutriscore_grade} />
 
-        <div className="flex flex-wrap gap-1.5 mt-auto pt-2">
-          <NutriScore grade={product.nutriscore_grade} />
-        </div>
-
-        <div className="flex items-center justify-between pt-1 border-t" style={{ borderColor: "#F0F4F5" }}>
-          <DroveBadge drove={product.drove_by} />
-          <span className="text-xs font-mono" style={{ color: "#89979B" }}>
-            {product.score.toFixed(4)}
-          </span>
-        </div>
-
-        {/* Nutrition row */}
-        {(product.sodium_100g != null || product.proteins_100g != null || product.energy_kcal_100g != null) && (
-          <div className="flex gap-3 text-xs" style={{ color: "#89979B" }}>
+        {(product.energy_kcal_100g != null || product.proteins_100g != null || product.sodium_100g != null) && (
+          <div className="flex flex-wrap gap-3 text-sm" style={{ color: "#89979B" }}>
             {product.energy_kcal_100g != null && <span>{Math.round(product.energy_kcal_100g)} kcal</span>}
             {product.proteins_100g != null && <span>{product.proteins_100g}g protein</span>}
-            {product.sodium_100g != null && <span>{Math.round(product.sodium_100g * 1000)}mg sodium</span>}
+            {product.sodium_100g != null && <span>{Math.round(product.sodium_100g * 1000)}mg Na</span>}
           </div>
         )}
+
+        <div className="mt-auto pt-3 flex items-center justify-between border-t" style={{ borderColor: "#F0F4F5" }}>
+          <DroveBadge drove={product.drove_by} />
+          <span className="text-sm font-mono" style={{ color: "#89979B" }}>{product.score.toFixed(4)}</span>
+        </div>
       </div>
     </div>
   );
@@ -103,22 +89,14 @@ function ProductCard({ product }: { product: Product }) {
 
 export function ProductGrid({ results }: { results: Product[] }) {
   if (results.length === 0) {
-    return (
-      <div className="text-center py-16 text-sm" style={{ color: "#89979B" }}>
-        No products found — try broader terms
-      </div>
-    );
+    return <div className="text-center py-16 text-base" style={{ color: "#89979B" }}>No products found — try broader terms</div>;
   }
 
   return (
     <div>
-      <p className="text-xs mb-4 font-medium" style={{ color: "#89979B" }}>
-        {results.length} results
-      </p>
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
-        {results.map((p, i) => (
-          <ProductCard key={i} product={p} />
-        ))}
+      <p className="text-sm font-medium mb-5" style={{ color: "#89979B" }}>{results.length} results</p>
+      <div className="grid grid-cols-2 gap-5 lg:grid-cols-3 xl:grid-cols-4">
+        {results.map((p, i) => <ProductCard key={i} product={p} />)}
       </div>
     </div>
   );
