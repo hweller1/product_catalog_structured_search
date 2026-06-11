@@ -6,3 +6,5 @@ openfoodfacts-products.jsonl.gz
 *.gz
 specs/
 .progress.md
+frontend/node_modules/
+frontend/.next/

@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+:root {
+  --mdb-dark: #001E2B;
+  --mdb-green: #00ED64;
+  --mdb-forest: #023430;
+  --mdb-slate: #1C2D38;
+  --mdb-muted: #89979B;
+}
+
+body {
+  background: #F0F4F5;
+  color: #001E2B;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
